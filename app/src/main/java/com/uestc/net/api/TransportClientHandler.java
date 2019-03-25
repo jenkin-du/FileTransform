@@ -36,7 +36,6 @@ public class TransportClientHandler {
                 //下载响应
                 case "fileDownloadAck":
                     handleFileDownloadAck(ctx, msg);
-                    Log.i(TAG, "handleMessage: fileDownloadAck");
                     break;
 
                 //上传确认
@@ -137,10 +136,10 @@ public class TransportClientHandler {
             //响应
             response(responseMsg, ctx.channel());
         } else if (ack.equals(Message.Ack.FILE_LOCKED)) {
-            //文件被加锁，不可写，等五秒钟在询问
+            //文件被加锁，不可写，等2秒再询问
 
             try {
-                Thread.sleep(1000 * 3);
+                Thread.sleep(1000 * 2);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

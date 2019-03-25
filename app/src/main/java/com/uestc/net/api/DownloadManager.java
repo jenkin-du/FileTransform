@@ -1,7 +1,10 @@
 package com.uestc.net.api;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
 import android.util.Log;
 
+import com.uestc.app.MyApplication;
 import com.uestc.net.callback.FileTransportListener;
 import com.uestc.net.callback.NetStateListener;
 import com.uestc.net.callback.TransportListener;
@@ -10,6 +13,7 @@ import com.uestc.net.protocol.ExceptionMessage;
 import com.uestc.net.protocol.Message;
 import com.uestc.net.protocol.TimedOutReason;
 import com.uestc.util.SharePreferenceUtil;
+import com.uestc.util.ToastUtil;
 
 import java.io.File;
 
@@ -134,8 +138,25 @@ public class DownloadManager {
 
             //人为断开
             if (exception.contains("Software caused connection abort")) {
-                // TODO: 2019/3/23 判断网络可用性
-                transportListener.onExceptionCaught(ExceptionMessage.NETWORK_UNREACHABLE);
+                boolean flag = false;
+                //得到网络连接信息
+                ConnectivityManager manager = (ConnectivityManager) (MyApplication.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE));
+                //去进行判断网络是否连接
+                if (manager != null && manager.getActiveNetworkInfo() != null) {
+                    flag = manager.getActiveNetworkInfo().isAvailable();
+                }
+                if (!flag) {
+                    ToastUtil.showLong("当前无网络，请检查WiFi连接");
+                    transportListener.onExceptionCaught(ExceptionMessage.NETWORK_UNREACHABLE);
+                } else {
+                    //先停止
+                    task.onStop();
+                    Log.i(TAG, "onExceptionCaught: wait to start");
+                    //等待两秒
+                    waitTime(2);
+                    //重启下载
+                    onStart();
+                }
             }
 
             //网络不可达

@@ -22,5 +22,4 @@ public interface NetStateListener {
     //网络断开
     void onChannelInactive(ChannelHandlerContext ctx);
 
-
 }
