@@ -21,10 +21,10 @@ public class TransportClientHandler {
 
     private static final String TAG = "TransportClientHandler";
     //传输监听器
-    private TransportListener mTransportListener;
+    private TransportListener transportListener;
 
     public TransportClientHandler(TransportListener transportListener) {
-        this.mTransportListener = transportListener;
+        this.transportListener = transportListener;
     }
 
     public void handleMessage(ChannelHandlerContext ctx, Message msg) {
@@ -67,7 +67,7 @@ public class TransportClientHandler {
             long fileLength = Long.parseLong(msg.getParam("fileLength"));
             long fileOffset = Long.parseLong(msg.getParam("fileOffset"));
             //更新进度
-            mTransportListener.onProgress(fileOffset * 1.0 / fileLength, fileLength);
+            transportListener.onProgress(fileOffset * 1.0 / fileLength, fileLength);
 
             Message responseMsg = new Message();
             responseMsg.setType(Message.Type.REQUEST);
@@ -93,7 +93,7 @@ public class TransportClientHandler {
             ctx.close();
 
             //传输完成
-            mTransportListener.onComplete();
+            transportListener.onComplete();
         } else if (result.equals(Message.Result.FILE_MD5_WRONG)) {
             // 重新传输
             String fileName = msg.getParam("fileName");
@@ -176,14 +176,14 @@ public class TransportClientHandler {
             resultMsg.addParam("fileName", msg.getParam("fileName"));
 
             //下载成功
-            mTransportListener.onComplete();
+            transportListener.onComplete();
             //响应服务器
             response(resultMsg, ctx.channel());
         }
 
         //服务器没有文件
         if (ack.equals(Message.Ack.FILE_NOT_EXIST)) {
-            mTransportListener.onExceptionCaught(ExceptionMessage.FILE_NOT_EXIST);
+            transportListener.onExceptionCaught(ExceptionMessage.FILE_NOT_EXIST);
             ctx.channel().close();
         }
 
@@ -209,7 +209,7 @@ public class TransportClientHandler {
                     Log.i(TAG, "operationComplete: channelFuture:" + channelFuture.cause());
 
                     if (channelFuture.cause().getLocalizedMessage().contains("Software caused connection abort")) {
-                        mTransportListener.onExceptionCaught(ExceptionMessage.NETWORK_UNREACHABLE);
+                        transportListener.onExceptionCaught(ExceptionMessage.NETWORK_UNREACHABLE);
                     }
                 }
             }

@@ -154,9 +154,6 @@ public class MainActivity extends AppCompatActivity {
                                 ToastUtil.showLong("没有获取存取权限");
                                 break;
                         }
-
-
-
                     }
                 });
 
