@@ -69,7 +69,7 @@ public class TransportClient {
         //引导类
         Bootstrap b = new Bootstrap();
         //处理响应消息的handler,客户端使用
-        final TransportClientHandler transportClientHandler = new TransportClientHandler(transportListener);
+        final TransportClientHandler transportClientHandler = new TransportClientHandler(transportListener,netStateListener);
 
         //指定通道类型
         b.group(group).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)    //TCP，无延迟

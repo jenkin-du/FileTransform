@@ -2,6 +2,7 @@ package com.uestc.net.api;
 
 import android.util.Log;
 
+import com.uestc.net.callback.NetStateListener;
 import com.uestc.net.callback.TransportListener;
 import com.uestc.net.protocol.ExceptionMessage;
 import com.uestc.net.protocol.Message;
@@ -22,9 +23,12 @@ public class TransportClientHandler {
     private static final String TAG = "TransportClientHandler";
     //传输监听器
     private TransportListener transportListener;
+    //网络监听器
+    private NetStateListener netStateListener;
 
-    public TransportClientHandler(TransportListener transportListener) {
+    public TransportClientHandler(TransportListener transportListener, NetStateListener netStateListener) {
         this.transportListener = transportListener;
+        this.netStateListener = netStateListener;
     }
 
     public void handleMessage(ChannelHandlerContext ctx, Message msg) {
@@ -208,9 +212,7 @@ public class TransportClientHandler {
                 } else {
                     Log.i(TAG, "operationComplete: channelFuture:" + channelFuture.cause());
 
-                    if (channelFuture.cause().getLocalizedMessage().contains("Software caused connection abort")) {
-                        transportListener.onExceptionCaught(ExceptionMessage.NETWORK_UNREACHABLE);
-                    }
+                    netStateListener.onExceptionCaught(channelFuture.cause().getLocalizedMessage());
                 }
             }
         });

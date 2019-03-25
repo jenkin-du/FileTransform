@@ -24,7 +24,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
  */
 public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
 
-    private static final int SEGMENT_LENGTH = 1024 * 1024 * 5;
+    private static final int SEGMENT_LENGTH = 1024 * 1024 * 10;
     private FileTransportListener fileListener;
 
     TransportFrameEncoder(FileTransportListener fileListener) {

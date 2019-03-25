@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 import io.netty.buffer.ByteBuf;
@@ -438,7 +439,14 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
     //检查文件MD5
     private void checkFileMD5(ChannelHandlerContext ctx, Message msg, File tempFile) {
 
-        String md5 = MD5Util.getFileMd5(tempFile);
+        String md5 = null;
+        try {
+            md5 = MD5Util.getFileMd5(tempFile);
+        } catch (IOException | NoSuchAlgorithmException e) {
+            e.printStackTrace();
+
+            fileListener.onExceptionCaught(e.getLocalizedMessage());
+        }
         String fileMD5 = msg.getParam("fileMD5");
 
         Log.i(TAG, "checkFileMD5: md5 " + md5);
