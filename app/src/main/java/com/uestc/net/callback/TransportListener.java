@@ -1,5 +1,7 @@
 package com.uestc.net.callback;
 
+import com.uestc.net.protocol.ExceptionMessage;
+
 /**
  * <pre>
  *     author : jenkin
@@ -25,8 +27,8 @@ public interface TransportListener {
     void onComplete();
 
     /**
-     * 传输失败
+     * 传输异常
      */
-    void onExceptionCaught(String exception);
+    void onExceptionCaught(ExceptionMessage exceptionMessage);
 
 }

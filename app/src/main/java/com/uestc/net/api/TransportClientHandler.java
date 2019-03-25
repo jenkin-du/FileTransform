@@ -183,7 +183,7 @@ public class TransportClientHandler {
 
         //服务器没有文件
         if (ack.equals(Message.Ack.FILE_NOT_EXIST)) {
-            mTransportListener.onExceptionCaught(Message.Ack.FILE_NOT_EXIST);
+            mTransportListener.onExceptionCaught(ExceptionMessage.FILE_NOT_EXIST);
             ctx.channel().close();
         }
 

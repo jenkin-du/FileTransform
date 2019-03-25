@@ -70,7 +70,7 @@ public class DownloadManager {
         public void onComplete(String fileId, boolean isSuccess, String tempFilePath) {
 
             if (!isSuccess) {
-                transportListener.onExceptionCaught("file MD5 wrong!");
+                transportListener.onExceptionCaught(ExceptionMessage.FILE_MD5_WRONG);
 
             }
         }
@@ -78,7 +78,17 @@ public class DownloadManager {
         @Override
         public void onExceptionCaught(String exception) {
 
-            Log.i(TAG, "onExceptionCaught: exception:" + exception);
+            Log.i(TAG, "FileTransportListener onExceptionCaught:" + exception);
+
+            //文件不存在
+            if (exception.contains("file not exist")) {
+                transportListener.onExceptionCaught(ExceptionMessage.FILE_NOT_EXIST);
+            }
+
+            //没有获取存储权限
+            if (exception.contains("Permission denied")) {
+                transportListener.onExceptionCaught(ExceptionMessage.STORAGE_PERMISSION_DENIED);
+            }
         }
     };
 
@@ -97,11 +107,11 @@ public class DownloadManager {
         public void onTimedOut(TimedOutReason timeOutReason) {
 
             switch (timeOutReason) {
-                case readTimedOut:
-                case connectionTimedOut:
+                case READ:
+                case CONNECTION:
 
-                    Log.i(TAG, "onReadTimeOut: connectionTimedOut");
-                    Log.i(TAG, "onReadTimeOut: readTimedOut");
+                    Log.i(TAG, "onReadTimeOut: CONNECTION");
+                    Log.i(TAG, "onReadTimeOut: READ");
 
                     //先停止
                     task.onStop();
@@ -111,10 +121,10 @@ public class DownloadManager {
                     onStart();
 
                     break;
-                case writeTimedOut:
+                case WRITE:
                     break;
 
-                case readAndWriteTimedOut:
+                case READ_AND_WRITE:
                     break;
             }
 
@@ -122,7 +132,7 @@ public class DownloadManager {
 
         @Override
         public void onExceptionCaught(String exception) {
-            Log.i(TAG, "onExceptionCaught: exception:" + exception);
+            Log.i(TAG, "NetStateListener onExceptionCaught: exception:" + exception);
 
             //服务器断开连接
             if (exception.contains("Connection reset by peer")) {
@@ -181,6 +191,11 @@ public class DownloadManager {
             //服务器拒绝连接
             if (exception.contains("Connection refused")) {
                 transportListener.onExceptionCaught(ExceptionMessage.CONNECTION_REFUSED);
+            }
+
+            //没有获取存储权限
+            if (exception.contains("Permission denied")) {
+                transportListener.onExceptionCaught(ExceptionMessage.STORAGE_PERMISSION_DENIED);
             }
         }
 

@@ -16,6 +16,7 @@ import com.uestc.net.callback.TransportListener;
 import com.uestc.net.protocol.ExceptionMessage;
 import com.uestc.util.ToastUtil;
 
+
 public class MainActivity extends AppCompatActivity {
 
 
@@ -120,33 +121,45 @@ public class MainActivity extends AppCompatActivity {
              *
              */
             @Override
-            public void onExceptionCaught(final String exception) {
+            public void onExceptionCaught(final ExceptionMessage exceptionMessage) {
 
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
 
-                        switch (exception) {
+                        switch (exceptionMessage) {
                             //网络不可用
-                            case ExceptionMessage.NETWORK_UNREACHABLE:
+                            case NETWORK_UNREACHABLE:
 
                                 ToastUtil.showLong("网络不可用，请检查，然后继续下载");
 
                                 break;
-                            case ExceptionMessage.CONNECTION_REFUSED:
+                            case CONNECTION_REFUSED:
 
                                 ToastUtil.showLong("服务器拒绝连接，请检查服务器是否开启，然后继续下载");
 
                                 break;
 
-                            case ExceptionMessage.FILE_NOT_EXIST:
+                            case FILE_NOT_EXIST:
 
-                                ToastUtil.showLong("没有找到上传的文件");
+                                ToastUtil.showLong("没有找到下载的文件");
+                                break;
+
+                            case FILE_MD5_WRONG:
+                                ToastUtil.showLong("文件下载出现错误，正在重新下载");
+                                break;
+
+                            //没有赋予存取权限
+                            case STORAGE_PERMISSION_DENIED:
+                                ToastUtil.showLong("没有获取存取权限");
                                 break;
                         }
 
+
+
                     }
                 });
+
 
             }
 
@@ -197,27 +210,36 @@ public class MainActivity extends AppCompatActivity {
              *
              */
             @Override
-            public void onExceptionCaught(final String exception) {
+            public void onExceptionCaught(final ExceptionMessage exception) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
 
                         switch (exception) {
                             //网络不可用
-                            case ExceptionMessage.NETWORK_UNREACHABLE:
+                            case NETWORK_UNREACHABLE:
 
                                 ToastUtil.showLong("网络不可用，请检查，然后继续下载");
 
                                 break;
-                            case ExceptionMessage.CONNECTION_REFUSED:
+                            case CONNECTION_REFUSED:
 
                                 ToastUtil.showLong("服务器拒绝连接，请检查服务器是否开启，然后继续下载");
 
                                 break;
 
-                            case ExceptionMessage.FILE_NOT_EXIST:
+                            case FILE_NOT_EXIST:
 
-                                ToastUtil.showLong("服务器没有要下载的文件");
+                                ToastUtil.showLong("没有找到下载的文件");
+                                break;
+
+                            case FILE_MD5_WRONG:
+                                ToastUtil.showLong("文件下载出现错误，正在重新下载");
+                                break;
+
+                            //没有赋予存取权限
+                            case STORAGE_PERMISSION_DENIED:
+                                ToastUtil.showLong("没有获取存取权限");
                                 break;
                         }
 

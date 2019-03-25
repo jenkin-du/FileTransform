@@ -68,6 +68,30 @@ public class UploadManager {
         public void onExceptionCaught(String exception) {
 
             Log.i(TAG, "onExceptionCaught: exception:" + exception);
+
+            //文件不存在
+            if (exception.contains("file not exist")) {
+                transportListener.onExceptionCaught(ExceptionMessage.FILE_NOT_EXIST);
+            }
+
+            //没有获取存储权限
+            if (exception.contains("Permission denied")) {
+                transportListener.onExceptionCaught(ExceptionMessage.STORAGE_PERMISSION_DENIED);
+            }
+
+            //文件加密错误，重新传输
+            if (exception.contains("file encode wrong")) {
+                //重传
+                //下载请求
+                Message msg = new Message();
+                msg.setType(Message.Type.REQUEST);
+                msg.setAction("fileUploadRequest");
+                msg.addParam("fileName", fileName);
+                msg.addParam("filePath", filePath);
+
+                task = new UploadTask(ip, port, msg, transportListener, fileListener, netStateListener);
+                task.start();
+            }
         }
     };
 
@@ -82,10 +106,10 @@ public class UploadManager {
         public void onTimedOut(TimedOutReason timeOutReason) {
 
             switch (timeOutReason) {
-                case readAndWriteTimedOut:
-                case connectionTimedOut:
+                case READ_AND_WRITE:
+                case CONNECTION:
 
-                    Log.i(TAG, "onTimedOut: readAndWriteTimedOut");
+                    Log.i(TAG, "onTimedOut: READ_AND_WRITE");
 
                     //等待三秒再次连接
                     try {
@@ -100,9 +124,9 @@ public class UploadManager {
                     onStart();
 
                     break;
-                case writeTimedOut:
+                case WRITE:
                     break;
-                case readTimedOut:
+                case READ:
                     break;
             }
         }
@@ -151,6 +175,11 @@ public class UploadManager {
             //服务器拒绝连接
             if (exception.contains("Connection refused")) {
                 transportListener.onExceptionCaught(ExceptionMessage.CONNECTION_REFUSED);
+            }
+
+            //没有获取存储权限
+            if (exception.contains("Permission denied")) {
+                transportListener.onExceptionCaught(ExceptionMessage.STORAGE_PERMISSION_DENIED);
             }
         }
 

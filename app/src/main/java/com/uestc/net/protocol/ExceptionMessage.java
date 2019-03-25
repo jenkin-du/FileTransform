@@ -9,17 +9,15 @@ package com.uestc.net.protocol;
  *     version: 1.0
  * </pre>
  */
-public class ExceptionMessage {
-
+public enum ExceptionMessage{
     //网络不可用
-    public static final String NETWORK_UNREACHABLE = "network unreachable";
-
+    NETWORK_UNREACHABLE,
     //服务器拒绝连接
-    public static final String CONNECTION_REFUSED = "connection refused";
-
+    CONNECTION_REFUSED,
     // 文件不存在
-    public static final String FILE_NOT_EXIST = "file is not exist";
-
-    //文件被加锁，不可写
-    public static final String FILE_LOCKED = "file is locked";
+    FILE_NOT_EXIST,
+    //文件校验失败
+    FILE_MD5_WRONG,
+    //文件加密失败
+    STORAGE_PERMISSION_DENIED,
 }

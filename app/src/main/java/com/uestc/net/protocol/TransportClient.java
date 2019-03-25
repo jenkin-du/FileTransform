@@ -82,7 +82,7 @@ public class TransportClient {
                         //ch.pipeline().addLast("SSLHandler",new SslHandler(sslEngine));		//这里决定是否启用SSL
                         ch.pipeline().addLast(new IdleStateHandler(30, 90, 90));
                         //自己实现的msg编码器,继承了MessageToByteEncoder,出站处理器
-                        ch.pipeline().addLast("encoder", new TransportFrameEncoder(transportListener));
+                        ch.pipeline().addLast("encoder", new TransportFrameEncoder(fileListener));
                         //自己实现的帧解码器,继承了ChannelInboundHandlerAdapter,入站处理器
                         //TCP帧解码，对收到的字节流进行解码
                         ch.pipeline().addLast("decoder", new TransportFrameDecoder(transportClientHandler, fileListener, netStateListener));
@@ -96,14 +96,6 @@ public class TransportClient {
 //            LogUtil.getInstance().i(TAG, "Server starts，remote server address:" + host + ":" + port);
         //channel相当于该连接
         channel = channelFuture.channel();
-//        try {
-//
-//
-//        } catch (InterruptedException e) {
-//            Log.i(TAG, "TransportClient connection error:" + e.getMessage());
-////            LogUtil.getInstance().e(TAG, "TransportClient connection error:" + e.getMessage());
-//            throw new InterruptedException("TransportClient connection error:" + e.getMessage());
-//        }
     }
 
     /**

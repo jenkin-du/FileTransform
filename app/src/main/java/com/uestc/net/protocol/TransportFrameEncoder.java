@@ -3,7 +3,7 @@ package com.uestc.net.protocol;
 import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
-import com.uestc.net.callback.TransportListener;
+import com.uestc.net.callback.FileTransportListener;
 import com.uestc.util.MD5Util;
 
 import java.io.File;
@@ -25,10 +25,10 @@ import io.netty.handler.codec.MessageToByteEncoder;
 public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
 
     private static final int SEGMENT_LENGTH = 1024 * 1024 * 5;
-    private TransportListener transportListener;
+    private FileTransportListener fileListener;
 
-    TransportFrameEncoder(TransportListener transportListener) {
-        this.transportListener = transportListener;
+    TransportFrameEncoder(FileTransportListener fileListener) {
+        this.fileListener = fileListener;
     }
 
     @Override
@@ -82,7 +82,7 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
                         Log.i("TransportFrameEncoder", "encode: write end!!!");
                         raf.close();
                     } else {
-                        transportListener.onExceptionCaught("file encode wrong");
+                        fileListener.onExceptionCaught("file encode wrong");
                         channelHandlerContext.close();
                     }
 
@@ -113,7 +113,7 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
                 raf.close();
             } else {
                 //出现异常
-                transportListener.onExceptionCaught(ExceptionMessage.FILE_NOT_EXIST);
+                fileListener.onExceptionCaught("file not exist");
                 //关闭连接
                 channelHandlerContext.close();
             }

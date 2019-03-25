@@ -220,7 +220,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                         // 对文件进行加锁
                         lock = randomAccessFile.getChannel().tryLock();
                         if (lock == null) {
-                            fileListener.onExceptionCaught(ExceptionMessage.FILE_LOCKED);
+                            fileListener.onExceptionCaught(Message.Ack.FILE_LOCKED);
                             randomAccessFile.close();
                             ctx.close();
                             return;
@@ -241,7 +241,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                         // 对文件进行加锁
                         lock = randomAccessFile.getChannel().tryLock();
                         if (lock == null) {
-                            fileListener.onExceptionCaught(ExceptionMessage.FILE_LOCKED);
+                            fileListener.onExceptionCaught(Message.Ack.FILE_LOCKED);
                             randomAccessFile.close();
                             ctx.close();
                             return;
@@ -261,7 +261,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                     // 对文件进行加锁
                     lock = randomAccessFile.getChannel().tryLock();
                     if (lock == null) {
-                        fileListener.onExceptionCaught(ExceptionMessage.FILE_LOCKED);
+                        fileListener.onExceptionCaught(Message.Ack.FILE_LOCKED);
                         randomAccessFile.close();
                         ctx.close();
                         return;
@@ -422,7 +422,6 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
 
         UUID uuid = UUID.randomUUID();
         // TODO:2019/3/23 临时文件夹需要修改
-        // TODO:需要注意的异常，读写权限没有赋予
         File tempFolder = new File(Environment.getExternalStorageDirectory().getAbsolutePath());
         if (!tempFolder.exists()) {
             tempFolder.mkdir();
@@ -507,21 +506,21 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                 ctx.close();
                 Log.i(TAG, "userEventTriggered: IdleState.ALL_IDLE");
                 //超时
-                netListener.onTimedOut(TimedOutReason.readAndWriteTimedOut);
+                netListener.onTimedOut(TimedOutReason.READ_AND_WRITE);
             }
 
             if (event.state() == IdleState.READER_IDLE) {
                 ctx.close();
                 Log.i(TAG, "userEventTriggered: IdleState.READER_IDLE");
                 //超时
-                netListener.onTimedOut(TimedOutReason.readTimedOut);
+                netListener.onTimedOut(TimedOutReason.READ);
             }
 
             if (event.state() == IdleState.WRITER_IDLE) {
 //                ctx.close();
                 Log.i(TAG, "userEventTriggered: IdleState.WRITER_IDLE");
                 //超时
-                netListener.onTimedOut(TimedOutReason.writeTimedOut);
+                netListener.onTimedOut(TimedOutReason.WRITE);
             }
         }
     }
