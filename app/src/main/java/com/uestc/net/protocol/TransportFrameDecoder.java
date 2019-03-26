@@ -212,6 +212,14 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
          */
         if (hasFile && segmentLeftSize != 0) {
 
+            //判断空间是否充足
+            if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
+                fileListener.onExceptionCaught("storage is not enough");
+                ctx.close();
+                return;
+            }
+
+
             if (randomAccessFile == null) {
 
                 String tempFilePath = SharePreferenceUtil.getTempPath(msg.getFile().getFileName());
@@ -219,6 +227,14 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                     tempFile = new File(tempFilePath);
                     if (tempFile.exists()) {
                         randomAccessFile = new RandomAccessFile(tempFile, "rw");
+
+                        //判断空间是否充足
+                        if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
+                            fileListener.onExceptionCaught("storage is not enough");
+                            ctx.close();
+                            return;
+                        }
+
                         // 对文件进行加锁
                         lock = randomAccessFile.getChannel().tryLock();
                         if (lock == null) {
@@ -242,13 +258,6 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                             return;
                         }
 
-                        //判断空间是否充足
-                        if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
-                            fileListener.onExceptionCaught("storage is not enough");
-                            ctx.close();
-                            return;
-                        }
-
                         // 对文件进行加锁
                         lock = randomAccessFile.getChannel().tryLock();
                         if (lock == null) {
@@ -267,13 +276,6 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                         e.printStackTrace();
 
                         fileListener.onExceptionCaught(e.getLocalizedMessage());
-                        return;
-                    }
-
-                    //判断空间是否充足
-                    if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
-                        fileListener.onExceptionCaught("storage is not enough");
-                        ctx.close();
                         return;
                     }
 
@@ -453,7 +455,6 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
 
         tempFile.createNewFile();
         randomAccessFile = new RandomAccessFile(tempFile, "rw");
-//        randomAccessFile.setLength(msg.getFile().getFileLength());
         // 保存临时文件路径
         SharePreferenceUtil.saveTempPath(msg.getFile().getFileName(), tempFile.getAbsolutePath());
     }
