@@ -198,7 +198,8 @@ public class TransportClientHandler {
 
 
             //重新下载
-            msg.setAction("fileDownloadAck");
+            msg.setAction("fileDownloadRequest");
+            msg.removeParam("ack");
             msg.setHasFileData(false);
             msg.getFile().setFileOffset(0);
 

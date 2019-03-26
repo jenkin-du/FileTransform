@@ -10,6 +10,7 @@ import com.uestc.net.callback.FileTransportListener;
 import com.uestc.net.callback.NetStateListener;
 import com.uestc.util.MD5Util;
 import com.uestc.util.SharePreferenceUtil;
+import com.uestc.util.StorageSpaceUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -241,12 +242,12 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                             return;
                         }
 
-//                        //判断空间是否充足
-//                        if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
-//                            fileListener.onExceptionCaught("storage is not enough");
-//                            ctx.close();
-//                            return;
-//                        }
+                        //判断空间是否充足
+                        if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
+                            fileListener.onExceptionCaught("storage is not enough");
+                            ctx.close();
+                            return;
+                        }
 
                         // 对文件进行加锁
                         lock = randomAccessFile.getChannel().tryLock();
@@ -269,12 +270,12 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                         return;
                     }
 
-//                    //判断空间是否充足
-//                    if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
-//                        fileListener.onExceptionCaught("storage is not enough");
-//                        ctx.close();
-//                        return;
-//                    }
+                    //判断空间是否充足
+                    if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
+                        fileListener.onExceptionCaught("storage is not enough");
+                        ctx.close();
+                        return;
+                    }
 
                     // 对文件进行加锁
                     lock = randomAccessFile.getChannel().tryLock();
