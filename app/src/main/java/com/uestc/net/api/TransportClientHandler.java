@@ -189,12 +189,12 @@ public class TransportClientHandler {
 
             //删除已下载的文件
             String fileName = msg.getFile().getFileName();
-            String tempPath = SharePreferenceUtil.getTempPath(fileName);
+            String tempPath = SharePreferenceUtil.get(fileName);
             File tempFile = new File(tempPath);
             if (tempFile.exists()) {
                 tempFile.delete();
             }
-            SharePreferenceUtil.removeTempPath(fileName);
+            SharePreferenceUtil.remove(fileName);
 
 
             //重新下载

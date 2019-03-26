@@ -4,7 +4,7 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.util.Log;
 
-import com.uestc.app.MyApplication;
+import com.uestc.app.App;
 import com.uestc.net.callback.FileTransportListener;
 import com.uestc.net.callback.NetStateListener;
 import com.uestc.net.callback.TransportListener;
@@ -175,7 +175,7 @@ public class UploadManager {
             if (exception.contains("Software caused connection abort")) {
                 boolean flag = false;
                 //得到网络连接信息
-                ConnectivityManager manager = (ConnectivityManager) (MyApplication.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE));
+                ConnectivityManager manager = (ConnectivityManager) (App.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE));
                 //去进行判断网络是否连接
                 if (manager != null && manager.getActiveNetworkInfo() != null) {
                     flag = manager.getActiveNetworkInfo().isAvailable();

@@ -222,7 +222,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
 
             if (randomAccessFile == null) {
 
-                String tempFilePath = SharePreferenceUtil.getTempPath(msg.getFile().getFileName());
+                String tempFilePath = SharePreferenceUtil.get(msg.getFile().getFileName());
                 if (!tempFilePath.equals("")) {
                     tempFile = new File(tempFilePath);
                     if (tempFile.exists()) {
@@ -244,7 +244,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                             return;
                         }
                     } else {
-                        SharePreferenceUtil.removeTempPath(msg.getFile().getFileName());
+                        SharePreferenceUtil.remove(msg.getFile().getFileName());
 
                         try {
                             // 生成临时文件路径
@@ -456,7 +456,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
         tempFile.createNewFile();
         randomAccessFile = new RandomAccessFile(tempFile, "rw");
         // 保存临时文件路径
-        SharePreferenceUtil.saveTempPath(msg.getFile().getFileName(), tempFile.getAbsolutePath());
+        SharePreferenceUtil.save(msg.getFile().getFileName(), tempFile.getAbsolutePath());
     }
 
     //检查文件MD5
@@ -484,7 +484,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
             //完成数据传输，处理业务逻辑
             clientHandler.handleMessage(ctx, msg);
             //删除临时文件记录
-            SharePreferenceUtil.removeTempPath(msg.getFile().getFileName());
+            SharePreferenceUtil.remove(msg.getFile().getFileName());
         } else {
 
             //数据传输进度
@@ -505,7 +505,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
             //删除临时文件
             tempFile.delete();
             //删除临时文件记录
-            SharePreferenceUtil.removeTempPath(msg.getFile().getFileName());
+            SharePreferenceUtil.remove(msg.getFile().getFileName());
 
             //下载错误，响应服务器
             ctx.channel().writeAndFlush(message);

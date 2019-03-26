@@ -2,8 +2,7 @@ package com.uestc.util;
 
 import android.widget.Toast;
 
-import com.uestc.app.Global;
-import com.uestc.app.MyApplication;
+import com.uestc.app.App;
 
 
 /**
@@ -17,23 +16,21 @@ import com.uestc.app.MyApplication;
 public class ToastUtil {
 
     public static void showShort(String msg) {
-        Toast.makeText(MyApplication.getInstance(), msg, Toast.LENGTH_SHORT).show();
+        Toast.makeText(App.getInstance(), msg, Toast.LENGTH_SHORT).show();
 
     }
 
     public static void showShort(String msg,int gravity) {
-        Toast toast =Toast.makeText(MyApplication.getInstance(), msg, Toast.LENGTH_SHORT);
+        Toast toast =Toast.makeText(App.getInstance(), msg, Toast.LENGTH_SHORT);
         toast.setGravity(gravity,0,0);
         toast.show();
     }
 
     public static void showLong(String msg) {
-        Toast.makeText(MyApplication.getInstance(), msg, Toast.LENGTH_LONG).show();
+        Toast.makeText(App.getInstance(), msg, Toast.LENGTH_LONG).show();
     }
 
     public static void showDebugInfo(String msg) {
-        if (Global.DEBUG) {
-            Toast.makeText(MyApplication.getInstance(), msg, Toast.LENGTH_SHORT).show();
-        }
+        Toast.makeText(App.getInstance(), msg, Toast.LENGTH_SHORT).show();
     }
 }
