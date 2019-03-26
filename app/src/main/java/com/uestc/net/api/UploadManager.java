@@ -1,7 +1,10 @@
 package com.uestc.net.api;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
 import android.util.Log;
 
+import com.uestc.app.MyApplication;
 import com.uestc.net.callback.FileTransportListener;
 import com.uestc.net.callback.NetStateListener;
 import com.uestc.net.callback.TransportListener;
@@ -9,6 +12,7 @@ import com.uestc.net.protocol.ExceptionMessage;
 import com.uestc.net.protocol.Message;
 import com.uestc.net.protocol.TimedOutReason;
 import com.uestc.net.protocol.UploadTask;
+import com.uestc.util.ToastUtil;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -83,11 +87,15 @@ public class UploadManager {
             if (exception.contains("file encode wrong")) {
                 //重传
                 //下载请求
+                //下载请求
                 Message msg = new Message();
-                msg.setType(Message.Type.REQUEST);
                 msg.setAction("fileUploadRequest");
-                msg.addParam("fileName", fileName);
-                msg.addParam("filePath", filePath);
+                msg.setHasFileData(false);
+
+                Message.File file = new Message.File();
+                file.setFileName(fileName);
+                file.setFilePath(filePath);
+                msg.setFile(file);
 
                 task = new UploadTask(ip, port, msg, transportListener, fileListener, netStateListener);
                 task.start();
@@ -107,8 +115,6 @@ public class UploadManager {
 
             switch (timeOutReason) {
                 case READ_AND_WRITE:
-                case CONNECTION:
-
                     Log.i(TAG, "onTimedOut: READ_AND_WRITE");
 
                     //等待三秒再次连接
@@ -135,6 +141,24 @@ public class UploadManager {
         public void onExceptionCaught(String exception) {
             Log.i(TAG, "onExceptionCaught: exception:" + exception);
 
+            if (exception.contains("connection timed out")) {
+                //网络超时
+                unreachableCount++;
+                //若网络不可达重试五次以上仍无法连接，则判断为无法连接
+                if (unreachableCount > 5) {
+                    transportListener.onExceptionCaught(ExceptionMessage.NETWORK_UNREACHABLE);
+                } else {
+                    //先停止
+                    task.onStop();
+                    Log.i(TAG, "onExceptionCaught: wait to start");
+                    //等待两秒
+                    waitTime(2);
+                    //重启下载
+                    onStart();
+                }
+            }
+
+
             //服务器断开连接
             if (exception.contains("Connection reset by peer")) {
 
@@ -149,8 +173,25 @@ public class UploadManager {
 
             //人为断开
             if (exception.contains("Software caused connection abort")) {
-                // TODO: 2019/3/23 判断网络可用性
-                transportListener.onExceptionCaught(ExceptionMessage.NETWORK_UNREACHABLE);
+                boolean flag = false;
+                //得到网络连接信息
+                ConnectivityManager manager = (ConnectivityManager) (MyApplication.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE));
+                //去进行判断网络是否连接
+                if (manager != null && manager.getActiveNetworkInfo() != null) {
+                    flag = manager.getActiveNetworkInfo().isAvailable();
+                }
+                if (!flag) {
+                    ToastUtil.showLong("当前无网络，请检查WiFi连接");
+                    transportListener.onExceptionCaught(ExceptionMessage.NETWORK_UNREACHABLE);
+                } else {
+                    //先停止
+                    task.onStop();
+                    Log.i(TAG, "onExceptionCaught: wait to start");
+                    //等待两秒
+                    waitTime(2);
+                    //重启下载
+                    onStart();
+                }
             }
 
             //网络不可达
@@ -205,10 +246,13 @@ public class UploadManager {
 
         //下载请求
         Message msg = new Message();
-        msg.setType(Message.Type.REQUEST);
         msg.setAction("fileUploadRequest");
-        msg.addParam("fileName", fileName);
-        msg.addParam("filePath", filePath);
+        msg.setHasFileData(false);
+
+        Message.File file = new Message.File();
+        file.setFileName(fileName);
+        file.setFilePath(filePath);
+        msg.setFile(file);
 
         task = new UploadTask(ip, port, msg, transportListener, fileListener, netStateListener);
         task.start();

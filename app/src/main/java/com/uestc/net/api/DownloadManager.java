@@ -89,6 +89,11 @@ public class DownloadManager {
             if (exception.contains("Permission denied")) {
                 transportListener.onExceptionCaught(ExceptionMessage.STORAGE_PERMISSION_DENIED);
             }
+
+            //空间不充足
+            if (exception.contains("storage is not enough")) {
+                transportListener.onExceptionCaught(ExceptionMessage.STORAGE_NOT_ENOUGH);
+            }
         }
     };
 
@@ -108,9 +113,6 @@ public class DownloadManager {
 
             switch (timeOutReason) {
                 case READ:
-                case CONNECTION:
-
-                    Log.i(TAG, "onReadTimeOut: CONNECTION");
                     Log.i(TAG, "onReadTimeOut: READ");
 
                     //先停止
@@ -133,6 +135,23 @@ public class DownloadManager {
         @Override
         public void onExceptionCaught(String exception) {
             Log.i(TAG, "NetStateListener onExceptionCaught: exception:" + exception);
+
+            if (exception.contains("connection timed out")) {
+                //网络超时
+                unreachableCount++;
+                //若网络不可达重试五次以上仍无法连接，则判断为无法连接
+                if (unreachableCount > 5) {
+                    transportListener.onExceptionCaught(ExceptionMessage.NETWORK_UNREACHABLE);
+                } else {
+                    //先停止
+                    task.onStop();
+                    Log.i(TAG, "onExceptionCaught: wait to start");
+                    //等待两秒
+                    waitTime(2);
+                    //重启下载
+                    onStart();
+                }
+            }
 
             //服务器断开连接
             if (exception.contains("Connection reset by peer")) {
@@ -238,10 +257,8 @@ public class DownloadManager {
 
         //下载请求
         Message msg = new Message();
-        msg.setType(Message.Type.REQUEST);
         msg.setAction("fileDownloadRequest");
-        msg.addParam("fileName", fileName);
-        msg.setHasFile(false);
+        msg.setHasFileData(false);
 
         long offset = 0;
         String tempFilePath = SharePreferenceUtil.getTempPath(fileName);
@@ -251,7 +268,12 @@ public class DownloadManager {
                 offset = tempFile.length();
             }
         }
-        msg.addParam("fileOffset", offset + "");
+
+        Message.File file = new Message.File();
+        file.setFileName(fileName);
+        file.setFileOffset(offset);
+
+        msg.setFile(file);
 
         task = new DownloadTask(ip, port, msg, transportListener, fileListener, netStateListener);
         task.start();

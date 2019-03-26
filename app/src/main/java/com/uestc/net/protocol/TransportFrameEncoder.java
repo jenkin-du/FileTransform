@@ -36,19 +36,19 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
 
         Log.i("TransportFrameEncoder", "encode: message:" + message);
 
-        boolean hasFile = message.isHasFile();
+        boolean hasFile = message.isHasFileData();
         if (hasFile) {
-            String filePath = message.getParams().get("filePath");
+            String filePath = message.getFile().getFilePath();
             File file = new File(filePath);
             if (file.exists()) {
                 //添加文件属性
                 long fileLength = file.length();
-                message.addParam("fileLength", fileLength + "");
+                message.getFile().setFileLength(fileLength);
 
                 String md5 = MD5Util.getFileMd5(new File(filePath));
-                message.addParam("fileMD5", md5);
+                message.getFile().setMd5(md5);
 
-                long offset = Long.parseLong(message.getParam("fileOffset"));
+                long offset = message.getFile().getFileOffset();
                 Log.i("TransportFrameEncoder", "encode: offset:" + offset);
 
                 RandomAccessFile raf = new RandomAccessFile(new File(filePath), "rw");
@@ -61,7 +61,7 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
 
                     long segmentLength = fileLength - offset;
                     if (segmentLength > 0) {
-                        message.addParam("segmentLength", segmentLength + "");
+                        message.getFile().setSegmentLength(segmentLength);
 
                         //转化为json格式的支付串
                         String jsonMessage = JSON.toJSONString(message);
@@ -88,7 +88,7 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
 
                 } else {
 
-                    message.addParam("segmentLength", SEGMENT_LENGTH + "");
+                    message.getFile().setSegmentLength(SEGMENT_LENGTH);
                     //转化为json格式的支付串
                     String jsonMessage = JSON.toJSONString(message);
                     byte[] byteMsg = jsonMessage.getBytes();

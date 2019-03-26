@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         uploadProgress.setProgress(0);
         String filePath = Environment.getExternalStorageDirectory() + "/20190125-6.zip";
 
-        uploadManager = new UploadManager("192.168.0.114", 20001, filePath, "20190125-6.zip", new TransportListener() {
+        uploadManager = new UploadManager("192.168.1.100", 20001, filePath, "20190125-6.zip", new TransportListener() {
 
             /**
              * 传输过程
@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
 
                             case FILE_NOT_EXIST:
 
-                                ToastUtil.showLong("没有找到下载的文件");
+                                ToastUtil.showLong("没有找到上传的文件");
                                 break;
 
                             case FILE_MD5_WRONG:
@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void download() {
 
-        downloadManager = new DownloadManager("192.168.0.114", 20001,
+        downloadManager = new DownloadManager("192.168.1.100", 20001,
                 "WeChatOpenSdkSample.7z", null, new TransportListener() {
 
             /**
@@ -237,6 +237,11 @@ public class MainActivity extends AppCompatActivity {
                             //没有赋予存取权限
                             case STORAGE_PERMISSION_DENIED:
                                 ToastUtil.showLong("没有获取存取权限");
+                                break;
+
+                            //空间不充足
+                            case STORAGE_NOT_ENOUGH:
+                                ToastUtil.showLong("存储空间不足");
                                 break;
                         }
 

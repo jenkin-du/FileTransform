@@ -10,7 +10,6 @@ package com.uestc.net.protocol;
  * </pre>
  */
 public enum TimedOutReason {
-    CONNECTION,
     READ,
     WRITE,
     READ_AND_WRITE

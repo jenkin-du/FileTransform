@@ -126,12 +126,12 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                 msg = JSON.parseObject(jsonMsg, Message.class);
 
                 //有文件传输
-                if (msg.isHasFile()) {
+                if (msg.isHasFileData()) {
 
-                    fileSize = Long.parseLong(msg.getParams().get("fileLength"));
-                    fileOffset = Long.parseLong(msg.getParam("fileOffset"));
+                    fileSize = msg.getFile().getFileLength();
+                    fileOffset = msg.getFile().getFileOffset();
                     fileLeftSize = fileSize - fileOffset;
-                    segmentLeftSize = Long.parseLong(msg.getParam("segmentLength"));
+                    segmentLeftSize = msg.getFile().getSegmentLength();
                     hasFile = true;
 
                     //没有文件传输
@@ -186,12 +186,12 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
 
                     msg = JSON.parseObject(jsonMsg, Message.class);
                     //有文件传输
-                    if (msg.isHasFile()) {
+                    if (msg.isHasFileData()) {
 
-                        fileSize = Long.parseLong(msg.getParams().get("fileLength"));
-                        fileOffset = Long.parseLong(msg.getParam("fileOffset"));
+                        fileSize = msg.getFile().getFileLength();
+                        fileOffset = msg.getFile().getFileOffset();
                         fileLeftSize = fileSize - fileOffset;
-                        segmentLeftSize = Long.parseLong(msg.getParam("segmentLength"));
+                        segmentLeftSize = msg.getFile().getSegmentLength();
                         hasFile = true;
 
                         //没有文件传输
@@ -213,7 +213,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
 
             if (randomAccessFile == null) {
 
-                String tempFilePath = SharePreferenceUtil.getTempPath(msg.getParam("fileName"));
+                String tempFilePath = SharePreferenceUtil.getTempPath(msg.getFile().getFileName());
                 if (!tempFilePath.equals("")) {
                     tempFile = new File(tempFilePath);
                     if (tempFile.exists()) {
@@ -227,7 +227,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                             return;
                         }
                     } else {
-                        SharePreferenceUtil.removeTempPath(msg.getParam("fileName"));
+                        SharePreferenceUtil.removeTempPath(msg.getFile().getFileName());
 
                         try {
                             // 生成临时文件路径
@@ -237,8 +237,17 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                             e.printStackTrace();
 
                             fileListener.onExceptionCaught(e.getLocalizedMessage());
+                            ctx.close();
                             return;
                         }
+
+//                        //判断空间是否充足
+//                        if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
+//                            fileListener.onExceptionCaught("storage is not enough");
+//                            ctx.close();
+//                            return;
+//                        }
+
                         // 对文件进行加锁
                         lock = randomAccessFile.getChannel().tryLock();
                         if (lock == null) {
@@ -259,6 +268,14 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
                         fileListener.onExceptionCaught(e.getLocalizedMessage());
                         return;
                     }
+
+//                    //判断空间是否充足
+//                    if (!StorageSpaceUtil.storageSpaceEnough(msg.getFile().getFileLength() - msg.getFile().getFileOffset())) {
+//                        fileListener.onExceptionCaught("storage is not enough");
+//                        ctx.close();
+//                        return;
+//                    }
+
                     // 对文件进行加锁
                     lock = randomAccessFile.getChannel().tryLock();
                     if (lock == null) {
@@ -401,17 +418,20 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
      */
     private void handleSegmentResponse(ChannelHandlerContext ctx, Message msg) {
 
-        long fileOffset = Long.parseLong(msg.getParam("fileOffset"));
-        long segmentLength = Long.parseLong(msg.getParam("segmentLength"));
+        long fileOffset = msg.getFile().getFileOffset();
+        long segmentLength = msg.getFile().getSegmentLength();
 
-        msg.setType(Message.Type.REQUEST);
-        msg.setAction("fileDownloadSegmentResult");
-        msg.setHasFile(false);
-        msg.addParam("result", Message.Result.SUCCESS);
-        msg.addParam("fileOffset", (fileOffset + segmentLength) + "");
+        Message rm = new Message();
+        rm.setAction("fileDownloadSegmentResult");
+        rm.setHasFileData(false);
+        rm.addParam("result", Message.Result.SUCCESS);
+
+        Message.File file = msg.getFile();
+        file.setFileOffset(fileOffset + segmentLength);
+        rm.setFile(file);
 
         //回应
-        ctx.channel().writeAndFlush(msg);
+        ctx.channel().writeAndFlush(rm);
     }
 
     /**
@@ -432,8 +452,9 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
 
         tempFile.createNewFile();
         randomAccessFile = new RandomAccessFile(tempFile, "rw");
+//        randomAccessFile.setLength(msg.getFile().getFileLength());
         // 保存临时文件路径
-        SharePreferenceUtil.saveTempPath(msg.getParam("fileName"), tempFile.getAbsolutePath());
+        SharePreferenceUtil.saveTempPath(msg.getFile().getFileName(), tempFile.getAbsolutePath());
     }
 
     //检查文件MD5
@@ -447,7 +468,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
 
             fileListener.onExceptionCaught(e.getLocalizedMessage());
         }
-        String fileMD5 = msg.getParam("fileMD5");
+        String fileMD5 = msg.getFile().getMd5();
 
         Log.i(TAG, "checkFileMD5: md5 " + md5);
         Log.i(TAG, "checkFileMD5: fileMD5 " + fileMD5);
@@ -461,7 +482,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
             //完成数据传输，处理业务逻辑
             clientHandler.handleMessage(ctx, msg);
             //删除临时文件记录
-            SharePreferenceUtil.removeTempPath(msg.getParam("fileName"));
+            SharePreferenceUtil.removeTempPath(msg.getFile().getFileName());
         } else {
 
             //数据传输进度
@@ -470,17 +491,19 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
             fileListener.onComplete("", false, this.tempFile.getAbsolutePath());
             //重传
             Message message = new Message();
-            message.setType(Message.Type.REQUEST);
             message.setAction("fileDownloadResult");
-            message.setHasFile(false);
+            message.setHasFileData(false);
             message.addParam("result", Message.Result.FILE_MD5_WRONG);
-            message.addParam("fileName", msg.getParam("fileName"));
-            message.addParam("filePath", msg.getParam("filePath"));
+
+            Message.File file = new Message.File();
+            file.setFileName(msg.getFile().getFileName());
+            file.setFilePath(msg.getFile().getFilePath());
+            message.setFile(file);
 
             //删除临时文件
             tempFile.delete();
             //删除临时文件记录
-            SharePreferenceUtil.removeTempPath(msg.getParam("fileName"));
+            SharePreferenceUtil.removeTempPath(msg.getFile().getFileName());
 
             //下载错误，响应服务器
             ctx.channel().writeAndFlush(message);
@@ -494,7 +517,7 @@ public class TransportFrameDecoder extends ChannelInboundHandlerAdapter {
         super.channelInactive(ctx);
         Log.d(TAG, "onChannelInactive: channel has inactive");
 
-        if (randomAccessFile != null) {
+        if (randomAccessFile != null && lock != null) {
             lock.release();
             randomAccessFile.close();
         }

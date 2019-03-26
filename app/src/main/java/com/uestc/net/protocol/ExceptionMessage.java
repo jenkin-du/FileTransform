@@ -20,4 +20,6 @@ public enum ExceptionMessage{
     FILE_MD5_WRONG,
     //文件加密失败
     STORAGE_PERMISSION_DENIED,
+    //空间不充足
+    STORAGE_NOT_ENOUGH,
 }

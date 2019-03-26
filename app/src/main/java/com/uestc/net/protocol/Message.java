@@ -17,23 +17,17 @@ public class Message {
     //消息的动作
     private String action;
 
-    //消息类型
-    private int type;
 
-    //是否附带文件
-    private boolean hasFile = false;
+    //是否附带文件数据
+    private boolean hasFileData = false;
+
+    //文件
+    private File file;
 
 
-    //传递的参数
+    //传递其他与业务相关的的参数
     private HashMap<String, String> params = new HashMap<>();
 
-
-    //消息类型
-    public static class Type {
-
-        public static final int REQUEST = 1;//请求
-        public static final int RESPONSE = 2;//响应
-    }
 
     /**
      * 结果类型
@@ -55,6 +49,8 @@ public class Message {
         public static final String FILE_LOCKED = "file is locked";
         // 文件不存在
         public static final String FILE_NOT_EXIST = "file is not exist";
+        //文件加密错误，重传
+        public static final String FILE_ENCODE_WRONG = "file encode wrong";
     }
 
     /**
@@ -67,7 +63,7 @@ public class Message {
     /**
      * 获取参数
      *
-     * @return value
+     * @return actionParam
      */
     public String getParam(String key) {
         return params.get(key);
@@ -78,13 +74,6 @@ public class Message {
         return params;
     }
 
-    public int getType() {
-        return type;
-    }
-
-    public void setType(int type) {
-        this.type = type;
-    }
 
     public void setParams(HashMap<String, String> params) {
         this.params = params;
@@ -98,21 +87,113 @@ public class Message {
         this.action = action;
     }
 
-    public boolean isHasFile() {
-        return hasFile;
+    public boolean isHasFileData() {
+        return hasFileData;
     }
 
-    public void setHasFile(boolean hasFile) {
-        this.hasFile = hasFile;
+    public void setHasFileData(boolean hasFileData) {
+        this.hasFileData = hasFileData;
     }
+
+    public File getFile() {
+        return file;
+    }
+
+    public void setFile(File file) {
+        this.file = file;
+    }
+
 
     @Override
     public String toString() {
         return "Message{" +
                 "action='" + action + '\'' +
-                ", type=" + type +
-                ", hasFile=" + hasFile +
+                ", hasFileData=" + hasFileData +
+                ", file=" + file +
                 ", params=" + params +
                 '}';
+    }
+
+    /**
+     * 消息携带的文件
+     */
+    public static class File {
+
+        public File() {
+
+        }
+
+        //文件名
+        private String fileName;
+        //文件路径
+        private String filePath;
+        //MD5
+        private String md5;
+        //文件长度
+        private long fileLength;
+        //已传输的文件偏移量
+        private long fileOffset;
+        //本次传输的文件大小（段长度）
+        private long segmentLength;
+
+        public String getFileName() {
+            return fileName;
+        }
+
+        public void setFileName(String fileName) {
+            this.fileName = fileName;
+        }
+
+        public String getFilePath() {
+            return filePath;
+        }
+
+        public void setFilePath(String filePath) {
+            this.filePath = filePath;
+        }
+
+        public String getMd5() {
+            return md5;
+        }
+
+        public void setMd5(String md5) {
+            this.md5 = md5;
+        }
+
+        public long getFileLength() {
+            return fileLength;
+        }
+
+        public void setFileLength(long fileLength) {
+            this.fileLength = fileLength;
+        }
+
+        public long getFileOffset() {
+            return fileOffset;
+        }
+
+        public void setFileOffset(long fileOffset) {
+            this.fileOffset = fileOffset;
+        }
+
+        public long getSegmentLength() {
+            return segmentLength;
+        }
+
+        public void setSegmentLength(long segmentLength) {
+            this.segmentLength = segmentLength;
+        }
+
+        @Override
+        public String toString() {
+            return "File{" +
+                    "fileName='" + fileName + '\'' +
+                    ", filePath='" + filePath + '\'' +
+                    ", md5='" + md5 + '\'' +
+                    ", fileLength=" + fileLength +
+                    ", fileOffset=" + fileOffset +
+                    ", segmentLength=" + segmentLength +
+                    '}';
+        }
     }
 }

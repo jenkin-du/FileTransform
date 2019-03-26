@@ -6,7 +6,9 @@ import com.uestc.net.callback.NetStateListener;
 import com.uestc.net.callback.TransportListener;
 import com.uestc.net.protocol.ExceptionMessage;
 import com.uestc.net.protocol.Message;
+import com.uestc.util.SharePreferenceUtil;
 
+import java.io.File;
 import java.net.SocketAddress;
 
 import io.netty.channel.Channel;
@@ -68,18 +70,15 @@ public class TransportClientHandler {
         String result = msg.getParam("result");
         if (result.equals(Message.Result.SUCCESS)) {
 
-            long fileLength = Long.parseLong(msg.getParam("fileLength"));
-            long fileOffset = Long.parseLong(msg.getParam("fileOffset"));
+            long fileLength = msg.getFile().getFileLength();
+            long fileOffset = msg.getFile().getFileOffset();
             //更新进度
             transportListener.onProgress(fileOffset * 1.0 / fileLength, fileLength);
 
             Message responseMsg = new Message();
-            responseMsg.setType(Message.Type.REQUEST);
             responseMsg.setAction("fileUploadSegment");
-            responseMsg.setHasFile(true);
-            responseMsg.addParam("fileName", msg.getParam("fileName"));
-            responseMsg.addParam("filePath", msg.getParam("filePath"));
-            responseMsg.addParam("fileOffset", msg.getParam("fileOffset"));
+            responseMsg.setHasFileData(true);
+            responseMsg.setFile(msg.getFile());
 
             //响应
             response(responseMsg, ctx.channel());
@@ -100,16 +99,16 @@ public class TransportClientHandler {
             transportListener.onComplete();
         } else if (result.equals(Message.Result.FILE_MD5_WRONG)) {
             // 重新传输
-            String fileName = msg.getParam("fileName");
+            String fileName = msg.getFile().getFileName();
             if (fileName != null) {
 
                 Message responseMsg = new Message();
-                responseMsg.setType(Message.Type.REQUEST);
                 responseMsg.setAction("fileUploadSegment");
-                responseMsg.setHasFile(true);
-                responseMsg.addParam("fileName", msg.getParam("fileName"));
-                responseMsg.addParam("filePath", msg.getParam("filePath"));
-                responseMsg.addParam("fileOffset", 0 + "");
+                responseMsg.setHasFileData(true);
+
+                Message.File file = msg.getFile();
+                file.setFileOffset(0);
+                responseMsg.setFile(file);
 
                 //响应
                 response(responseMsg, ctx.channel());
@@ -128,12 +127,9 @@ public class TransportClientHandler {
         if (ack.equals(Message.Ack.FILE_READY)) {
             //服务器文件可写
             Message responseMsg = new Message();
-            responseMsg.setType(Message.Type.REQUEST);
             responseMsg.setAction("fileUploadSegment");
-            responseMsg.setHasFile(true);
-            responseMsg.addParam("fileName", msg.getParam("fileName"));
-            responseMsg.addParam("filePath", msg.getParam("filePath"));
-            responseMsg.addParam("fileOffset", msg.getParam("fileOffset"));
+            responseMsg.setHasFileData(true);
+            responseMsg.setFile(msg.getFile());
 
             Log.i(TAG, "handleFileUploadAck: file is ready");
 
@@ -150,10 +146,8 @@ public class TransportClientHandler {
 
             //下载请求
             Message responseMsg = new Message();
-            msg.setType(Message.Type.REQUEST);
             msg.setAction("fileUploadRequest");
-            msg.addParam("fileName", msg.getParam("fileName"));
-            msg.addParam("filePath", msg.getParam("filePath"));
+            msg.setFile(msg.getFile());
 
             //响应
             response(responseMsg, ctx.channel());
@@ -174,10 +168,9 @@ public class TransportClientHandler {
         if (ack.equals(Message.Ack.FILE_READY)) {
             //下载成功，返回下载成功
             Message resultMsg = new Message();
-            resultMsg.setType(Message.Type.REQUEST);
             resultMsg.setAction("fileDownloadResult");
             resultMsg.addParam("result", Message.Result.SUCCESS);
-            resultMsg.addParam("fileName", msg.getParam("fileName"));
+            resultMsg.setFile(msg.getFile());
 
             //下载成功
             transportListener.onComplete();
@@ -189,6 +182,27 @@ public class TransportClientHandler {
         if (ack.equals(Message.Ack.FILE_NOT_EXIST)) {
             transportListener.onExceptionCaught(ExceptionMessage.FILE_NOT_EXIST);
             ctx.channel().close();
+        }
+
+        //服务器数据加密错误，重新下载
+        if (ack.equals(Message.Ack.FILE_ENCODE_WRONG)) {
+
+            //删除已下载的文件
+            String fileName = msg.getFile().getFileName();
+            String tempPath = SharePreferenceUtil.getTempPath(fileName);
+            File tempFile = new File(tempPath);
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
+            SharePreferenceUtil.removeTempPath(fileName);
+
+
+            //重新下载
+            msg.setAction("fileDownloadAck");
+            msg.setHasFileData(false);
+            msg.getFile().setFileOffset(0);
+
+            response(msg, ctx.channel());
         }
 
     }
