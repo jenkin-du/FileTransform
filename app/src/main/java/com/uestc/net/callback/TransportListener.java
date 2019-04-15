@@ -1,6 +1,7 @@
 package com.uestc.net.callback;
 
 import com.uestc.net.protocol.ExceptionMessage;
+import com.uestc.net.protocol.Message;
 
 /**
  * <pre>
@@ -14,6 +15,14 @@ import com.uestc.net.protocol.ExceptionMessage;
 public interface TransportListener {
 
     /**
+     * 开始传输文件
+     *
+     * @param fileSize   文件大小
+     * @param fileOffset 已传输的文件偏移量
+     */
+    void onBegin(long fileSize, long fileOffset);
+
+    /**
      * 下载过程
      *
      * @param percentage 传输百分比
@@ -24,7 +33,7 @@ public interface TransportListener {
     /**
      * 传输结束
      */
-    void onComplete();
+    void onComplete(Message message);
 
     /**
      * 传输异常

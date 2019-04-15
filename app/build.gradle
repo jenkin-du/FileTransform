@@ -32,7 +32,6 @@ dependencies {
     implementation files('libs/netty-all-4.1.19.Final.jar')
     //    json
     implementation 'com.alibaba:fastjson:1.2.49'
-    implementation files('libs/commons-codec-1.12.jar')
     // 解决64k问题
     implementation 'com.android.support:multidex:1.0.3'
     // 图片库

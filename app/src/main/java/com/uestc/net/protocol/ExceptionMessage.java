@@ -9,7 +9,7 @@ package com.uestc.net.protocol;
  *     version: 1.0
  * </pre>
  */
-public enum ExceptionMessage{
+public enum ExceptionMessage {
     //网络不可用
     NETWORK_UNREACHABLE,
     //服务器拒绝连接
@@ -18,8 +18,10 @@ public enum ExceptionMessage{
     FILE_NOT_EXIST,
     //文件校验失败
     FILE_MD5_WRONG,
-    //文件加密失败
+    //没有存取权限
     STORAGE_PERMISSION_DENIED,
     //空间不充足
     STORAGE_NOT_ENOUGH,
+    //未知错误
+    UNKNOWN_EXCEPTION
 }

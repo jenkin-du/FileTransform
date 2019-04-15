@@ -2,6 +2,7 @@ package com.uestc.net.protocol;
 
 import android.util.Log;
 
+import com.uestc.app.App;
 import com.uestc.net.callback.FileTransportListener;
 import com.uestc.net.callback.NetStateListener;
 import com.uestc.net.callback.TransportListener;
@@ -21,17 +22,13 @@ public class UploadTask extends Thread {
 
     private TransportClient client;
 
-    private String ip;
-    private int port;
     private Message msg;
     private TransportListener transportListener;
     private FileTransportListener fileListener;
     private NetStateListener netStateListener;
 
 
-    public UploadTask(String ip, int port, Message msg, TransportListener transportListener, FileTransportListener fileListener, NetStateListener netStateListener) {
-        this.ip = ip;
-        this.port = port;
+    public UploadTask(Message msg, TransportListener transportListener, FileTransportListener fileListener, NetStateListener netStateListener) {
         this.msg = msg;
         this.transportListener = transportListener;
         this.fileListener = fileListener;
@@ -43,14 +40,15 @@ public class UploadTask extends Thread {
     public void run() {
 
         try {
-            client = new TransportClient(ip, port, fileListener, transportListener, netStateListener);
+            client = new TransportClient(App.ip, App.port, fileListener, transportListener, netStateListener);
             client.startConnect();
             //下载文件
             client.transportMessage(msg);
 
         } catch (Exception e) {
             e.printStackTrace();
-            Log.i(TAG, "run: e:" + e.getLocalizedMessage());
+
+            Log.e(TAG, "run: e:" + e.getLocalizedMessage());
 
             String exception = e.getLocalizedMessage();
             netStateListener.onExceptionCaught(exception);
@@ -61,8 +59,12 @@ public class UploadTask extends Thread {
      * 关闭连接
      */
     public void onStop() {
-        client.closeChannel();
-        client = null;
+
+        if (client != null) {
+            client.closeChannel();
+            client = null;
+        }
+
     }
 
 }

@@ -1,11 +1,15 @@
 package com.uestc.app;
 
 import android.app.Application;
+import android.os.Environment;
 
 
 public class App extends Application {
 
-    private static App app;
+    public static App app;
+    public static String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/FileTransform";
+    public static String ip = "192.168.1.117";
+    public static int port = 20002;
 
     /**
      * 获取单例

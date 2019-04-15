@@ -13,22 +13,29 @@ public interface FileTransportListener {
 
 
     /**
+     * 开始传输文件
+     *
+     * @param fileSize   文件大小
+     * @param fileOffset 已传输的文件偏移量
+     */
+    void onBegin(long fileSize, long fileOffset);
+
+
+    /**
      * 传输进度
      *
-     * @param fileId    文件id
      * @param progress  传输进度
      * @param totalSize 总大小
      */
-    void onProgress(String fileId, double progress, long totalSize);
+    void onProgress(double progress, long totalSize);
 
     /**
      * 下载完成
      *
-     * @param fileId       唯一文件id
      * @param isSuccess    是否下载成功
      * @param tempFilePath 下载的临时文件路径
      */
-    void onComplete(String fileId, boolean isSuccess, String tempFilePath);
+    void onComplete(boolean isSuccess, String tempFilePath);
 
 
     void onExceptionCaught(String exception);

@@ -1,4 +1,4 @@
-package com.uestc.util;
+package com.uestc.net.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;

@@ -4,7 +4,7 @@ import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
 import com.uestc.net.callback.FileTransportListener;
-import com.uestc.util.MD5Util;
+import com.uestc.net.config.NetConfig;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -24,7 +24,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
  */
 public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
 
-    private static final int SEGMENT_LENGTH = 1024 * 1024 * 10;
+    private static final int SEGMENT_LENGTH = NetConfig.UPLOAD_SEGMENT;
     private FileTransportListener fileListener;
 
     TransportFrameEncoder(FileTransportListener fileListener) {
@@ -45,9 +45,6 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
                 long fileLength = file.length();
                 message.getFile().setFileLength(fileLength);
 
-                String md5 = MD5Util.getFileMd5(new File(filePath));
-                message.getFile().setMd5(md5);
-
                 long offset = message.getFile().getFileOffset();
                 Log.i("TransportFrameEncoder", "encode: offset:" + offset);
 
@@ -61,6 +58,7 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
 
                     long segmentLength = fileLength - offset;
                     if (segmentLength > 0) {
+                        message.setAction(Message.Action.FILE_UPLOAD_RESPONSE);
                         message.getFile().setSegmentLength(segmentLength);
 
                         //转化为json格式的支付串
@@ -68,7 +66,7 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
                         byte[] byteMsg = jsonMessage.getBytes();
                         int msgLength = byteMsg.length;
 
-                        Log.i("TransportFrameEncoder", "encode: jsonMessage:" + jsonMessage);
+                        Log.i("TransportFrameEncoder", "encode: jsonMessage:" + message.getAction());
                         Log.i("TransportFrameEncoder", "encode: msgLength = " + msgLength);
 
                         //写入参数
@@ -87,14 +85,14 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
                     }
 
                 } else {
-
+                    message.setAction(Message.Action.FILE_UPLOAD_SEGMENT_RESPONSE);
                     message.getFile().setSegmentLength(SEGMENT_LENGTH);
                     //转化为json格式的支付串
                     String jsonMessage = JSON.toJSONString(message);
                     byte[] byteMsg = jsonMessage.getBytes();
                     int msgLength = byteMsg.length;
 
-                    Log.i("TransportFrameEncoder", "encode: jsonMessage:" + jsonMessage);
+                    Log.i("TransportFrameEncoder", "encode: msg action:" + message.getAction());
                     Log.i("TransportFrameEncoder", "encode: msgLength = " + msgLength);
 
                     //写入参数
@@ -122,12 +120,12 @@ public class TransportFrameEncoder extends MessageToByteEncoder<Message> {
             // 转化为json格式的支付串
             String jsonMessage = JSON.toJSONString(message);
 
-            System.out.println("TransportFrameEncoder encode: jsonMessage:" + jsonMessage);
+            Log.i("TransportFrameEncoder", " encode: jsonMessage:" + message.getAction());
 
             byte[] byteMsg = jsonMessage.getBytes();
             int msgLength = byteMsg.length;
 
-            System.out.println("TransportFrameEncoder encode: msgLength = " + msgLength);
+            Log.i("TransportFrameEncoder", "TransportFrameEncoder encode: msgLength = " + msgLength);
 
             // 写入参数
             out.writeInt(msgLength);

@@ -19,6 +19,9 @@ public interface NetStateListener {
     //网络出现错误
     void onExceptionCaught(String exception);
 
+    //传输完成
+    void onComplete(ChannelHandlerContext ctx);
+
     //网络断开
     void onChannelInactive(ChannelHandlerContext ctx);
 

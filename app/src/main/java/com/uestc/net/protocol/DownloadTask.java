@@ -1,5 +1,6 @@
 package com.uestc.net.protocol;
 
+import com.uestc.app.App;
 import com.uestc.net.callback.FileTransportListener;
 import com.uestc.net.callback.NetStateListener;
 import com.uestc.net.callback.TransportListener;
@@ -19,17 +20,15 @@ public class DownloadTask extends Thread {
 
     private TransportClient client;
 
-    private String ip;
-    private int port;
+    private String ip= App.ip;
+    private int port=App.port;
     private FileTransportListener fileListener;
     private NetStateListener netStateListener;
     private TransportListener transportListener;
 
     private Message msg;
 
-    public DownloadTask(String ip, int port, Message msg, TransportListener transportListener, FileTransportListener fileListener, NetStateListener netStateListener) {
-        this.ip = ip;
-        this.port = port;
+    public DownloadTask(Message msg, TransportListener transportListener, FileTransportListener fileListener, NetStateListener netStateListener) {
         this.msg = msg;
         this.fileListener = fileListener;
         this.transportListener = transportListener;
@@ -59,7 +58,11 @@ public class DownloadTask extends Thread {
      * 关闭连接
      */
     public void onStop() {
-        client.closeChannel();
-        client = null;
+
+        if (client != null) {
+            client.closeChannel();
+            client = null;
+        }
+
     }
 }

@@ -1,14 +1,6 @@
-package com.uestc.util;
+package com.uestc.net.util;
 
 import android.os.Environment;
-
-/**
- * @author Linsong Huang
- * @describe 检测安卓sd卡剩余空间
- * @date 2018/5/16
- * @email 1044782171@qq.com
- * @org UESTC
- */
 
 
 public class StorageSpaceUtil {

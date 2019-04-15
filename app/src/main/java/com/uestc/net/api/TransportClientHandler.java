@@ -2,11 +2,13 @@ package com.uestc.net.api;
 
 import android.util.Log;
 
+import com.uestc.net.callback.FileTransportListener;
 import com.uestc.net.callback.NetStateListener;
 import com.uestc.net.callback.TransportListener;
 import com.uestc.net.protocol.ExceptionMessage;
 import com.uestc.net.protocol.Message;
-import com.uestc.util.SharePreferenceUtil;
+import com.uestc.net.util.MD5Util;
+import com.uestc.net.util.SharePreferenceUtil;
 
 import java.io.File;
 import java.net.SocketAddress;
@@ -27,93 +29,74 @@ public class TransportClientHandler {
     private TransportListener transportListener;
     //网络监听器
     private NetStateListener netStateListener;
+    //文件监听器
+    private FileTransportListener fileTransportListener;
 
-    public TransportClientHandler(TransportListener transportListener, NetStateListener netStateListener) {
+    public TransportClientHandler(TransportListener transportListener, FileTransportListener fileTransportListener, NetStateListener netStateListener) {
         this.transportListener = transportListener;
+        this.fileTransportListener = fileTransportListener;
         this.netStateListener = netStateListener;
     }
 
     public void handleMessage(ChannelHandlerContext ctx, Message msg) {
 
         String action = msg.getAction();
+        Log.d(TAG, "handleMessage: action:" + action);
         if (action != null) {
 
             switch (action) {
                 //下载响应
-                case "fileDownloadAck":
-                    handleFileDownloadAck(ctx, msg);
+                case Message.Action.FILE_DOWNLOAD_RESPONSE:
+                    handleFileDownloadResponse(ctx, msg);
                     break;
 
-                //上传确认
-                case "fileUploadAck":
-                    handleFileUploadAck(ctx, msg);
+                //上传响应
+                case Message.Action.FILE_UPLOAD_RESPONSE:
+                    handleFileUploadResponse(ctx, msg);
                     break;
 
-                //处理分段上传结果
-                case "fileUploadSegmentResult":
-                    handleFileUploadSegmentResult(ctx, msg);
-                    break;
                 //文件上传结果
-                case "fileUploadResult":
+                case Message.Action.FILE_UPLOAD_RESULT:
                     handleFileUploadResult(ctx, msg);
                     break;
-
+                //处理检查的结果
+                case Message.Action.CHECK_H264_FILE_RESULT:
+                    handleCheckH264FileResult(ctx, msg);
+                    break;
             }
         }
     }
 
     /**
-     * 处理分段上传结果
+     * 处理检查的结果
      */
-    private void handleFileUploadSegmentResult(ChannelHandlerContext ctx, Message msg) {
-
-        String result = msg.getParam("result");
-        if (result.equals(Message.Result.SUCCESS)) {
-
-            long fileLength = msg.getFile().getFileLength();
-            long fileOffset = msg.getFile().getFileOffset();
-            //更新进度
-            transportListener.onProgress(fileOffset * 1.0 / fileLength, fileLength);
-
-            Message responseMsg = new Message();
-            responseMsg.setAction("fileUploadSegment");
-            responseMsg.setHasFileData(true);
-            responseMsg.setFile(msg.getFile());
-
-            //响应
-            response(responseMsg, ctx.channel());
-        }
+    private void handleCheckH264FileResult(ChannelHandlerContext ctx, Message msg) {
+        netStateListener.onComplete(ctx);
+        transportListener.onComplete(msg);
+        ctx.channel().close();
     }
+
 
     /**
      * 处理文件上传结果
      */
     private void handleFileUploadResult(ChannelHandlerContext ctx, Message msg) {
 
-        String result = msg.getParam("result");
-        if (result.equals(Message.Result.SUCCESS)) {
+        String response = msg.getResponse();
+        if (response.equals(Message.Response.SUCCESS)) {
             //下载完成
-            ctx.close();
-
-            //传输完成
-            transportListener.onComplete();
-        } else if (result.equals(Message.Result.FILE_MD5_WRONG)) {
-            // 重新传输
-            String fileName = msg.getFile().getFileName();
-            if (fileName != null) {
-
-                Message responseMsg = new Message();
-                responseMsg.setAction("fileUploadSegment");
-                responseMsg.setHasFileData(true);
-
-                Message.File file = msg.getFile();
-                file.setFileOffset(0);
-                responseMsg.setFile(file);
-
-                //响应
-                response(responseMsg, ctx.channel());
+            try {
+                ctx.close().sync();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
+            //传输完成
+            transportListener.onComplete(msg);
+            netStateListener.onComplete(ctx);
+        } else if (response.equals(Message.Response.FILE_MD5_WRONG)) {
+            // 重新传输
+            fileTransportListener.onExceptionCaught("file md5 is wrong");
         }
 
     }
@@ -121,39 +104,22 @@ public class TransportClientHandler {
     /**
      * 处理文件上传确认
      */
-    private void handleFileUploadAck(ChannelHandlerContext ctx, Message msg) {
+    private void handleFileUploadResponse(ChannelHandlerContext ctx, Message msg) {
 
-        String ack = msg.getParam("ack");
-        if (ack.equals(Message.Ack.FILE_READY)) {
+        String response = msg.getResponse();
+        if (response.equals(Message.Response.FILE_READY)) {
             //服务器文件可写
-            Message responseMsg = new Message();
-            responseMsg.setAction("fileUploadSegment");
-            responseMsg.setHasFileData(true);
-            responseMsg.setFile(msg.getFile());
 
-            Log.i(TAG, "handleFileUploadAck: file is ready");
+            msg.setAction(Message.Action.FILE_UPLOAD_SEGMENT_RESPONSE);
+            msg.setHasFileData(true);
 
-            //响应
-            response(responseMsg, ctx.channel());
-        } else if (ack.equals(Message.Ack.FILE_LOCKED)) {
-            //文件被加锁，不可写，等2秒再询问
-
-            try {
-                Thread.sleep(1000 * 2);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            //下载请求
-            Message responseMsg = new Message();
-            msg.setAction("fileUploadRequest");
-            msg.setFile(msg.getFile());
+            Log.i(TAG, "handleFileUploadResponse: file is ready");
 
             //响应
-            response(responseMsg, ctx.channel());
+            response(msg, ctx.channel());
+        } else if (response.equals(Message.Response.FILE_LOCKED)) {
+            fileTransportListener.onExceptionCaught("file is locked");
         }
-
-
     }
 
     /**
@@ -161,47 +127,65 @@ public class TransportClientHandler {
      *
      * @param msg 消息
      */
-    private void handleFileDownloadAck(ChannelHandlerContext ctx, Message msg) {
+    private void handleFileDownloadResponse(ChannelHandlerContext ctx, Message msg) {
 
-        String ack = msg.getParam("ack");
+        String response = msg.getResponse();
         //下载成功
-        if (ack.equals(Message.Ack.FILE_READY)) {
+        if (response.equals(Message.Response.FILE_READY)) {
             //下载成功，返回下载成功
-            Message resultMsg = new Message();
-            resultMsg.setAction("fileDownloadResult");
-            resultMsg.addParam("result", Message.Result.SUCCESS);
-            resultMsg.setFile(msg.getFile());
+
+            msg.setAction(Message.Action.FILE_DOWNLOAD_RESULT);
+            msg.setResponse(Message.Response.SUCCESS);
+            msg.setHasFileData(false);
 
             //下载成功
-            transportListener.onComplete();
+            transportListener.onComplete(msg);
+            netStateListener.onComplete(ctx);
             //响应服务器
-            response(resultMsg, ctx.channel());
+            response(msg, ctx.channel());
         }
 
         //服务器没有文件
-        if (ack.equals(Message.Ack.FILE_NOT_EXIST)) {
+        if (response.equals(Message.Response.FILE_NOT_EXIST)) {
             transportListener.onExceptionCaught(ExceptionMessage.FILE_NOT_EXIST);
+            netStateListener.onComplete(ctx);
             ctx.channel().close();
         }
 
         //服务器数据加密错误，重新下载
-        if (ack.equals(Message.Ack.FILE_ENCODE_WRONG)) {
+        if (response.equals(Message.Response.FILE_ENCODE_WRONG)) {
 
             //删除已下载的文件
-            String fileName = msg.getFile().getFileName();
-            String tempPath = SharePreferenceUtil.get(fileName);
+            String tempPath = SharePreferenceUtil.get(MD5Util.getTempFileKey(msg));
             File tempFile = new File(tempPath);
             if (tempFile.exists()) {
                 tempFile.delete();
             }
-            SharePreferenceUtil.remove(fileName);
+            SharePreferenceUtil.remove(MD5Util.getTempFileKey(msg));
 
 
             //重新下载
-            msg.setAction("fileDownloadRequest");
-            msg.removeParam("ack");
+            msg.setAction(Message.Action.FILE_DOWNLOAD_REQUEST);
+            msg.setResponse("");
             msg.setHasFileData(false);
             msg.getFile().setFileOffset(0);
+
+            response(msg, ctx.channel());
+        }
+
+        //服务器文件没有准备好
+        if (response.equals(Message.Response.FILE_LOCKED)) {
+
+            //文件被加锁，不可写，等1秒再询问
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            //下载
+            msg.setAction(Message.Action.FILE_DOWNLOAD_REQUEST);
+            msg.setResponse("");
+            msg.setHasFileData(false);
 
             response(msg, ctx.channel());
         }

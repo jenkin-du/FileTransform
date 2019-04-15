@@ -1,9 +1,12 @@
 package com.uestc.net.protocol;
 
+import android.util.Log;
+
 import com.uestc.net.api.TransportClientHandler;
 import com.uestc.net.callback.FileTransportListener;
 import com.uestc.net.callback.NetStateListener;
 import com.uestc.net.callback.TransportListener;
+import com.uestc.net.config.NetConfig;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -53,11 +56,7 @@ public class TransportClient {
         this.netStateListener = netStateListener;
     }
 
-    public TransportClient(String host, int port, TransportListener transportListener) {
-        this.host = host;
-        this.port = port;
-        this.transportListener = transportListener;
-    }
+
 
 
     //开启连接
@@ -69,7 +68,7 @@ public class TransportClient {
         //引导类
         Bootstrap b = new Bootstrap();
         //处理响应消息的handler,客户端使用
-        final TransportClientHandler transportClientHandler = new TransportClientHandler(transportListener,netStateListener);
+        final TransportClientHandler transportClientHandler = new TransportClientHandler(transportListener, fileListener, netStateListener);
 
         //指定通道类型
         b.group(group).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)    //TCP，无延迟
@@ -80,7 +79,7 @@ public class TransportClient {
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         //ch.pipeline().addLast("SSLHandler",new SslHandler(sslEngine));		//这里决定是否启用SSL
-                        ch.pipeline().addLast(new IdleStateHandler(30, 90, 90));
+                        ch.pipeline().addLast(new IdleStateHandler(NetConfig.READ_IDLE_TIME, NetConfig.WRITE_IDLE_TIME, NetConfig.ALL_IDLE_TIME));
                         //自己实现的msg编码器,继承了MessageToByteEncoder,出站处理器
                         ch.pipeline().addLast("encoder", new TransportFrameEncoder(fileListener));
                         //自己实现的帧解码器,继承了ChannelInboundHandlerAdapter,入站处理器
@@ -93,7 +92,7 @@ public class TransportClient {
         ChannelFuture channelFuture;
         //连接端口并注册监听,阻塞到连接成功为止,n秒超时
         channelFuture = b.connect(host, port).sync();
-//            LogUtil.getInstance().i(TAG, "Server starts，remote server address:" + host + ":" + port);
+        Log.i(TAG, "Server starts，remote server address:" + host + ":" + port);
         //channel相当于该连接
         channel = channelFuture.channel();
     }
@@ -102,26 +101,25 @@ public class TransportClient {
      * 关掉客户端的连接池
      */
     public void closeGroup() {
-        try {
-            //阻塞地关闭整个线程池
-            group.shutdownGracefully().sync();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (group != null) {
+            try {
+                //阻塞地关闭整个线程池
+                group.shutdownGracefully().sync();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-
     }
 
     /**
      * 关掉连接
      */
     public void closeChannel() {
-        try {
-            //阻塞关连接
-            if (channel != null) {
-                channel.close().sync();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        //阻塞关连接
+        if (channel != null) {
+            channel.close();
+            channel = null;
+            //                closeGroup();
         }
     }
 
@@ -137,9 +135,9 @@ public class TransportClient {
             @Override
             public void operationComplete(ChannelFuture channelFuture) {
                 if (channelFuture.isSuccess()) {
-//                    LogUtil.getInstance().i(TAG, "Send Message " + msg + " success.");
+//                    Log.i(TAG, "Send Message " + msg + " success.");
                 } else {
-//                    LogUtil.getInstance().i(TAG, "Send Message" + msg + " failed.");
+//                    Log.i(TAG, "Send Message" + msg + " failed.");
                 }
             }
         });

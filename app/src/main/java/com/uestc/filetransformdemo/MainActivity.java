@@ -14,7 +14,8 @@ import com.uestc.net.api.DownloadManager;
 import com.uestc.net.api.UploadManager;
 import com.uestc.net.callback.TransportListener;
 import com.uestc.net.protocol.ExceptionMessage;
-import com.uestc.util.ToastUtil;
+import com.uestc.net.protocol.Message;
+import com.uestc.net.util.ToastUtil;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -84,27 +85,22 @@ public class MainActivity extends AppCompatActivity {
     private void upload() {
 
         uploadProgress.setProgress(0);
-        String filePath = Environment.getExternalStorageDirectory() + "/20190125-6.zip";
+        String filePath = Environment.getExternalStorageDirectory() + "/WeChatOpenSdkSample.7z";
 
-        uploadManager = new UploadManager("192.168.1.100", 20001, filePath, "20190125-6.zip", new TransportListener() {
+        uploadManager = new UploadManager("WeChatOpenSdkSample.7z", filePath, null, new TransportListener() {
+            @Override
+            public void onBegin(long fileSize, long fileOffset) {
 
-            /**
-             * 传输过程
-             *
-             * @param percentage 传输百分比
-             * @param totalSize  总大小 字节
-             */
+            }
+
             @RequiresApi(api = Build.VERSION_CODES.N)
             @Override
             public void onProgress(double percentage, long totalSize) {
                 uploadProgress.setProgress((int) (percentage * 100), true);
             }
 
-            /**
-             * 传输结束
-             */
             @Override
-            public void onComplete() {
+            public void onComplete(Message message) {
                 runOnUiThread(new Runnable() {
                     @RequiresApi(api = Build.VERSION_CODES.N)
                     @Override
@@ -116,13 +112,8 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
 
-            /**
-             * 传输失败
-             *
-             */
             @Override
             public void onExceptionCaught(final ExceptionMessage exceptionMessage) {
-
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -156,11 +147,8 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
-
-
+//
             }
-
-
         });
         uploadManager.onStart();
     }
@@ -168,28 +156,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void download() {
 
-        downloadManager = new DownloadManager("192.168.1.100", 20001,
-                "WeChatOpenSdkSample.7z", null, new TransportListener() {
+        String savedPath = Environment.getExternalStorageDirectory() + "/WeChatOpenSdkSample.7z";
+        downloadManager = new DownloadManager("WeChatOpenSdkSample.7z", savedPath, null, new TransportListener() {
+            @Override
+            public void onBegin(long fileSize, long fileOffset) {
 
-            /**
-             * 传输过程
-             *
-             * @param percentage 传输百分比
-             * @param totalSize  总大小 字节
-             */
+            }
+
             @RequiresApi(api = Build.VERSION_CODES.N)
             @Override
             public void onProgress(double percentage, long totalSize) {
-
                 downloadProgress.setProgress((int) (percentage * 100), true);
             }
 
-            /**
-             * 传输结束
-             */
             @Override
-            public void onComplete() {
-
+            public void onComplete(Message message) {
                 runOnUiThread(new Runnable() {
                     @RequiresApi(api = Build.VERSION_CODES.N)
                     @Override
@@ -199,20 +180,15 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                 });
-
             }
 
-            /**
-             * 传输出现异常
-             *
-             */
             @Override
-            public void onExceptionCaught(final ExceptionMessage exception) {
+            public void onExceptionCaught(final ExceptionMessage exceptionMessage) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
 
-                        switch (exception) {
+                        switch (exceptionMessage) {
                             //网络不可用
                             case NETWORK_UNREACHABLE:
 
@@ -248,7 +224,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             }
-
+//
 
         });
         downloadManager.onStart();
